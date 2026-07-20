@@ -18,11 +18,6 @@ interface BriefData {
 type UrgencyFilter = 'all' | 'high' | 'medium' | 'low'
 
 // ─── Helpers ──────────────────────────────────────────────────
-const ACCENT: Record<string, string> = {
-  high:   '#ff6b7a',
-  medium: '#ffbf5b',
-  low:    '#4ddea8',
-}
 const SOURCE_EMOJI: Record<string, string> = {
   Slack: '💬', Jira: '🔷', Email: '📧', GitHub: '🐙',
 }
@@ -31,7 +26,7 @@ const SOURCE_EMOJI: Record<string, string> = {
 
 function SkeletonCard() {
   return (
-    <div className="skeleton-card">
+    <div className="skeleton-card" role="listitem">
       <div className="skeleton sk-sm" />
       <div className="skeleton sk-md" />
       <div className="skeleton sk-lg" />
@@ -41,28 +36,26 @@ function SkeletonCard() {
 }
 
 function UrgencyBadge({ urgency }: { urgency: string }) {
-  const icons: Record<string, string> = { high: '🔴', medium: '🟡', low: '🟢' }
   return (
     <span className={`urgency-badge ${urgency}`}>
-      {icons[urgency] ?? '⚪'} {urgency}
+      {urgency}
     </span>
   )
 }
 
 function BriefCard({ item, index }: { item: BriefItem; index: number }) {
-  const accent = ACCENT[item.urgency] ?? ACCENT.medium
   const emoji  = SOURCE_EMOJI[item.source] ?? '📋'
+  const isFeatured = index === 0 && item.urgency === 'high'
+
   return (
     <article
-      className="card"
+      className={`card ${isFeatured ? 'featured' : ''}`}
       style={{
-        '--card-accent': accent,
-        animationDelay: `${index * 60}ms`,
+        animationDelay: `${index * 50}ms`,
       } as React.CSSProperties}
     >
       <div className="card-header">
         <div className="card-source">
-          <span className="source-dot" />
           {emoji} {item.source}
         </div>
         <UrgencyBadge urgency={item.urgency} />
@@ -82,7 +75,7 @@ function BriefCard({ item, index }: { item: BriefItem; index: number }) {
               rel="noopener noreferrer"
               className="card-link"
             >
-              Open ↗
+              Open link
             </a>
           )}
         </div>
@@ -159,9 +152,9 @@ function AddItemModal({ onClose, onAdd }: AddItemModalProps) {
             <div className="form-group">
               <label className="form-label">Urgency</label>
               <select className="form-select" value={form.urgency} onChange={set('urgency')}>
-                <option value="high">🔴 High</option>
-                <option value="medium">🟡 Medium</option>
-                <option value="low">🟢 Low</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
               </select>
             </div>
           </div>
@@ -186,12 +179,12 @@ function AddItemModal({ onClose, onAdd }: AddItemModalProps) {
             <input id="item-link" className="form-input" placeholder="https://…" value={form.link ?? ''} onChange={set('link')} />
           </div>
 
-          {error && <p style={{ color: '#ff6b7a', fontSize: '0.85rem' }}>{error}</p>}
+          {error && <p style={{ color: '#b42318', fontSize: '0.85rem', fontFamily: 'var(--font-sans)' }}>{error}</p>}
 
           <div className="form-actions">
             <button type="button" id="cancel-btn" className="btn btn-secondary" onClick={onClose}>Cancel</button>
             <button type="submit" id="submit-item-btn" className="btn btn-primary" disabled={loading}>
-              {loading ? '⏳ Saving…' : '✦ Add Item'}
+              {loading ? 'Saving…' : 'Add Item'}
             </button>
           </div>
         </form>
@@ -258,29 +251,21 @@ export default function App() {
 
   return (
     <div className="app">
-      {/* Animated background orbs */}
-      <div className="orb orb-1" />
-      <div className="orb orb-2" />
-      <div className="orb orb-3" />
-
       <div className="container">
         {/* ─── Header ─── */}
         <header className="header">
-          <div className="eyebrow">
-            <span className="eyebrow-dot" />
-            Your daily signal
-          </div>
+          <div className="eyebrow">Your daily signal</div>
           <h1 className="title">Morning Brief</h1>
           <div className="subtitle">
             {loading ? (
               <span>Loading your priorities…</span>
             ) : error ? (
-              <span style={{ color: '#ff6b7a' }}>⚠ Could not reach API — showing last cached data</span>
+              <span style={{ color: '#b42318' }}>Could not reach API — showing last cached data</span>
             ) : (
               <>
                 <span>{filtered.length} item{filtered.length !== 1 ? 's' : ''} for your attention</span>
                 {data?.updated && (
-                  <span className="last-updated">🕐 {data.updated}</span>
+                  <span className="last-updated">Updated {data.updated}</span>
                 )}
               </>
             )}
@@ -304,7 +289,7 @@ export default function App() {
             className="btn btn-primary"
             onClick={() => setShowModal(true)}
           >
-            ✦ Add Item
+            Add Item
           </button>
           <button
             id="refresh-btn"
@@ -312,7 +297,7 @@ export default function App() {
             onClick={handleRefresh}
             disabled={refreshing}
           >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
             {refreshing ? 'Syncing…' : 'Sync'}
@@ -329,7 +314,7 @@ export default function App() {
               className={`pill ${u !== 'all' ? u : ''} ${urgency === u ? 'active' : ''}`}
               onClick={() => setUrgency(u)}
             >
-              {u === 'all' ? 'All' : { high: '🔴', medium: '🟡', low: '🟢' }[u] + ' ' + u}
+              {u === 'all' ? 'All' : u}
             </button>
           ))}
 
@@ -381,7 +366,7 @@ export default function App() {
           <span>·</span>
           <span>Powered by Slack, Jira &amp; Email</span>
           <span>·</span>
-          <a href="/api/docs" target="_blank" rel="noopener">API Docs ↗</a>
+          <a href="/api/docs" target="_blank" rel="noopener">API Docs</a>
         </footer>
       </div>
 
